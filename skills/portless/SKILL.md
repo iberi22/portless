@@ -21,7 +21,7 @@ Replace port numbers with stable, named .localhost URLs. For humans and agents.
 
 ## Installation
 
-portless is a global CLI tool. Do NOT add it as a project dependency (no `npm install portless` or `pnpm add portless` in a project). Do NOT use `npx`.
+portless is a global CLI tool. Do NOT add it as a project dependency (no `npm install portless` or `pnpm add portless` in a project). Do NOT use `npx` or `pnpm dlx`.
 
 Install globally:
 
@@ -71,6 +71,8 @@ portless api.myapp pnpm start    # http://api.myapp.localhost:1355
 portless docs.myapp next dev     # http://docs.myapp.localhost:1355
 ```
 
+Wildcard subdomain routing: any subdomain of a registered route routes to that app automatically (e.g. `tenant1.myapp.localhost:1355` routes to the `myapp` app without extra registration). Exact matches take priority over wildcards.
+
 ### Bypassing portless
 
 Set `PORTLESS=0` or `PORTLESS=skip` to run the command directly without the proxy:
@@ -87,7 +89,7 @@ PORTLESS=0 pnpm dev   # Bypasses proxy, uses default port
 
 `.localhost` domains resolve to `127.0.0.1` natively in Chrome, Firefox, and Edge. Safari relies on the system DNS resolver, which may not handle `.localhost` subdomains on all configurations. Run `sudo portless hosts sync` to add entries to `/etc/hosts` if needed.
 
-Most frameworks (Next.js, Express, Nuxt, etc.) respect the `PORT` env var automatically. For frameworks that ignore `PORT` (Vite, Astro, React Router, Angular), portless auto-injects the correct `--port` and `--host` CLI flags.
+Most frameworks (Next.js, Express, Nuxt, etc.) respect the `PORT` env var automatically. For frameworks that ignore `PORT` (Vite, Astro, React Router, Angular, Expo, React Native), portless auto-injects the correct `--port` and `--host` CLI flags.
 
 ### State directory
 
@@ -104,7 +106,7 @@ Override with the `PORTLESS_STATE_DIR` environment variable.
 | --------------------- | ----------------------------------------------------- |
 | `PORTLESS_PORT`       | Override the default proxy port (default: 1355)       |
 | `PORTLESS_APP_PORT`   | Use a fixed port for the app (skip auto-assignment)   |
-| `PORTLESS_HTTPS`      | Set to `1` to always enable HTTPS/HTTP/2              |
+| `PORTLESS_HTTPS`      | Set to `1` or `true` to always enable HTTPS/HTTP/2    |
 | `PORTLESS_SYNC_HOSTS` | Set to `1` to auto-sync /etc/hosts when routes change |
 | `PORTLESS_STATE_DIR`  | Override the state directory                          |
 | `PORTLESS=0\|skip`    | Bypass the proxy, run the command directly            |
@@ -121,6 +123,8 @@ sudo portless trust                           # Add CA to trust store later
 
 First run generates a local CA and prompts for sudo to add it to the system trust store. After that, no prompts and no browser warnings. Set `PORTLESS_HTTPS=1` in `.bashrc`/`.zshrc` to make it permanent.
 
+On Linux, `portless trust` supports Debian/Ubuntu, Arch, Fedora/RHEL/CentOS, and openSUSE (via `update-ca-certificates` or `update-ca-trust`).
+
 ## CLI Reference
 
 | Command                                | Description                                                   |
@@ -135,13 +139,16 @@ First run generates a local CA and prompts for sudo to add it to the system trus
 | `portless proxy start --foreground`    | Start the proxy in foreground (for debugging)                 |
 | `portless proxy stop`                  | Stop the proxy                                                |
 | `portless alias <name> <port>`         | Register a static route (e.g. for Docker containers)          |
+| `portless alias <name> <port> --force` | Overwrite an existing route                                   |
 | `portless alias --remove <name>`       | Remove a static route                                         |
 | `portless hosts sync`                  | Add routes to /etc/hosts (fixes Safari)                       |
 | `portless hosts clean`                 | Remove portless entries from /etc/hosts                       |
 | `portless <name> --app-port <n> <cmd>` | Use a fixed port for the app instead of auto-assignment       |
 | `portless <name> --force <cmd>`        | Override an existing route registered by another process      |
 | `portless --name <name> <cmd>`         | Force `<name>` as app name (bypasses subcommand dispatch)     |
+| `portless <name> -- <cmd> [args...]`   | Stop flag parsing; everything after `--` is passed to child   |
 | `portless --help` / `-h`               | Show help                                                     |
+| `portless run --help`                  | Show help for a subcommand (also: alias, hosts)               |
 | `portless --version` / `-v`            | Show version                                                  |
 
 **Reserved names:** `run`, `alias`, `hosts`, `list`, `trust`, and `proxy` are subcommands and cannot be used as app names directly. Use `portless run <cmd>` to infer the name, or `portless --name <name> <cmd>` to force any name including reserved ones.
@@ -166,7 +173,7 @@ portless proxy start -p 8080
 
 ### Framework not respecting PORT
 
-Portless auto-injects `--port` and `--host` flags for frameworks that ignore the `PORT` env var: **Vite**, **Astro**, **React Router**, and **Angular**. SvelteKit uses Vite internally and is handled automatically.
+Portless auto-injects `--port` and `--host` flags for frameworks that ignore the `PORT` env var: **Vite**, **Astro**, **React Router**, **Angular**, **Expo**, and **React Native**. SvelteKit uses Vite internally and is handled automatically.
 
 For other frameworks that don't read `PORT`, pass the port manually:
 

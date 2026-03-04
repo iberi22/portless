@@ -57,6 +57,11 @@ portless api.myapp pnpm start
 
 portless docs.myapp next dev
 # -> http://docs.myapp.localhost:1355
+
+# Wildcard subdomains (no extra registration needed)
+# Any subdomain of a registered route routes automatically:
+#   tenant1.myapp.localhost:1355  -> myapp
+#   tenant2.myapp.localhost:1355  -> myapp
 ```
 
 ### In package.json
@@ -89,7 +94,7 @@ flowchart TD
 2. **Run apps** -- `portless <name> <command>` assigns a free port and registers with the proxy
 3. **Access via URL** -- `http://<name>.localhost:1355` routes through the proxy to your app
 
-Apps are assigned a random port (4000-4999) via the `PORT` and `HOST` environment variables. Most frameworks (Next.js, Express, Nuxt, etc.) respect these automatically. For frameworks that ignore `PORT` (Vite, Astro, React Router, Angular), portless auto-injects the correct `--port` and `--host` flags.
+Apps are assigned a random port (4000-4999) via the `PORT` and `HOST` environment variables. Most frameworks (Next.js, Express, Nuxt, etc.) respect these automatically. For frameworks that ignore `PORT` (Vite, Astro, React Router, Angular, Expo, React Native), portless auto-injects the correct `--port` and `--host` flags.
 
 ## HTTP/2 + HTTPS
 
@@ -113,12 +118,15 @@ portless proxy start --cert ./cert.pem --key ./key.pem
 sudo portless trust
 ```
 
+On Linux, `portless trust` supports Debian/Ubuntu, Arch, Fedora/RHEL/CentOS, and openSUSE (via `update-ca-certificates` or `update-ca-trust`).
+
 ## Commands
 
 ```bash
 portless run <cmd> [args...]     # Infer name from project, run through proxy
 portless <name> <cmd> [args...]  # Run app at http://<name>.localhost:1355
 portless alias <name> <port>     # Register a static route (e.g. for Docker)
+portless alias <name> <port> --force  # Overwrite an existing route
 portless alias --remove <name>   # Remove a static route
 portless list                    # Show active routes
 portless trust                   # Add local CA to system trust store
@@ -147,6 +155,7 @@ portless proxy stop              # Stop the proxy
 --app-port <number>              # Use a fixed port for the app (skip auto-assignment)
 --force                          # Override a route registered by another process
 --name <name>                    # Use <name> as the app name (bypasses subcommand dispatch)
+--                               # Stop flag parsing; everything after is passed to the child
 
 # Injected into child processes
 PORT                             # Ephemeral port the child should listen on
@@ -156,12 +165,13 @@ PORTLESS_URL                     # Public URL (e.g. http://myapp.localhost:1355)
 # Configuration
 PORTLESS_PORT=<number>           # Override the default proxy port
 PORTLESS_APP_PORT=<number>       # Use a fixed port for the app (same as --app-port)
-PORTLESS_HTTPS=1                 # Always enable HTTPS
+PORTLESS_HTTPS=1|true            # Always enable HTTPS
 PORTLESS_SYNC_HOSTS=1            # Auto-sync /etc/hosts when routes change
 PORTLESS_STATE_DIR=<path>        # Override the state directory
 
 # Info
 portless --help                  # Show help
+portless run --help              # Show help for a specific subcommand
 portless --version               # Show version
 ```
 

@@ -650,6 +650,7 @@ ${chalk.bold("Examples:")}
   portless api.myapp pnpm start       # -> http://api.myapp.localhost:1355
   portless run next dev               # -> http://<project>.localhost:1355
   portless run next dev               # in worktree -> http://<worktree>.<project>.localhost:1355
+  # Wildcard subdomains: tenant.myapp.localhost also routes to myapp
 
 ${chalk.bold("In package.json:")}
   {
@@ -661,10 +662,11 @@ ${chalk.bold("In package.json:")}
 ${chalk.bold("How it works:")}
   1. Start the proxy once (listens on port 1355 by default, no sudo needed)
   2. Run your apps - they auto-start the proxy and register automatically
+     (apps get a random port in the 4000-4999 range via PORT)
   3. Access via http://<name>.localhost:1355
   4. .localhost domains auto-resolve to 127.0.0.1
-  5. Frameworks that ignore PORT (Vite, Astro, React Router, Angular) get
-     --port and --host flags injected automatically
+  5. Frameworks that ignore PORT (Vite, Astro, React Router, Angular,
+     Expo, React Native) get --port and --host flags injected automatically
 
 ${chalk.bold("HTTP/2 + HTTPS:")}
   Use --https for HTTP/2 multiplexing (faster dev server page loads).
@@ -684,11 +686,12 @@ ${chalk.bold("Options:")}
   --app-port <number>           Use a fixed port for the app (skip auto-assignment)
   --force                       Override an existing route registered by another process
   --name <name>                 Use <name> as the app name (bypasses subcommand dispatch)
+  --                            Stop flag parsing; everything after is passed to the child
 
 ${chalk.bold("Environment variables:")}
   PORTLESS_PORT=<number>        Override the default proxy port (e.g. in .bashrc)
   PORTLESS_APP_PORT=<number>    Use a fixed port for the app (same as --app-port)
-  PORTLESS_HTTPS=1              Always enable HTTPS (set in .bashrc / .zshrc)
+  PORTLESS_HTTPS=1|true         Always enable HTTPS (set in .bashrc / .zshrc)
   PORTLESS_SYNC_HOSTS=1         Auto-sync /etc/hosts (requires sudo proxy start)
   PORTLESS_STATE_DIR=<path>     Override the state directory
   PORTLESS=0 | PORTLESS=skip    Run command directly without proxy
