@@ -353,6 +353,34 @@ describe("CLI", () => {
     });
   });
 
+  describe("proxy subcommand", () => {
+    it("prints help with --help", () => {
+      const { status, stdout } = run(["proxy", "--help"]);
+      expect(status).toBe(0);
+      expect(stdout).toContain("portless proxy");
+      expect(stdout).toContain("start");
+      expect(stdout).toContain("stop");
+    });
+
+    it("prints help with -h", () => {
+      const { status, stdout } = run(["proxy", "-h"]);
+      expect(status).toBe(0);
+      expect(stdout).toContain("portless proxy");
+    });
+
+    it("shows usage for bare 'proxy' without subcommand", () => {
+      const { status, stdout } = run(["proxy"]);
+      expect(status).toBe(0);
+      expect(stdout).toContain("start");
+      expect(stdout).toContain("stop");
+    });
+
+    it("exits 1 for unknown proxy subcommand", () => {
+      const { status } = run(["proxy", "typo"]);
+      expect(status).toBe(1);
+    });
+  });
+
   describe("--name flag", () => {
     it("treats reserved word as app name with PORTLESS=0", () => {
       const { status, stdout } = run(["--name", "run", "echo", "ok"], {

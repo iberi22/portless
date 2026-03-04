@@ -899,17 +899,19 @@ async function handleProxy(args: string[]): Promise<void> {
     return;
   }
 
-  if (args[1] !== "start") {
+  const isProxyHelp = args[1] === "--help" || args[1] === "-h";
+  if (isProxyHelp || args[1] !== "start") {
     console.log(`
-${chalk.bold("Usage: portless proxy <command>")}
+${chalk.bold("portless proxy")} - Manage the portless proxy server.
 
+${chalk.bold("Usage:")}
   ${chalk.cyan("portless proxy start")}                Start the proxy (daemon)
   ${chalk.cyan("portless proxy start --https")}        Start with HTTP/2 + TLS
   ${chalk.cyan("portless proxy start --foreground")}   Start in foreground (for debugging)
   ${chalk.cyan("portless proxy start -p 80")}          Start on port 80 (requires sudo)
   ${chalk.cyan("portless proxy stop")}                 Stop the proxy
 `);
-    process.exit(args[1] ? 1 : 0);
+    process.exit(isProxyHelp || !args[1] ? 0 : 1);
   }
 
   const isForeground = args.includes("--foreground");
