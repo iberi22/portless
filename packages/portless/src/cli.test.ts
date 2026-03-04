@@ -339,6 +339,13 @@ describe("CLI", () => {
       expect(stdout).toContain("portless hosts");
     });
 
+    it("shows usage for bare 'hosts' without subcommand", () => {
+      const { status, stdout } = run(["hosts"]);
+      expect(status).toBe(0);
+      expect(stdout).toContain("sync");
+      expect(stdout).toContain("clean");
+    });
+
     it("rejects unknown hosts subcommand", () => {
       const { status, stderr } = run(["hosts", "typo"]);
       expect(status).toBe(1);
