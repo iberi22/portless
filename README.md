@@ -67,6 +67,12 @@ portless run next dev   # -> http://myapp.localhost:1355
 portless run next dev   # -> http://fix-ui.myapp.localhost:1355
 ```
 
+Use `--name` to override the inferred base name while keeping the worktree prefix:
+
+```bash
+portless run --name myapp next dev   # -> http://fix-ui.myapp.localhost:1355
+```
+
 Put `portless run` in your `package.json` once and it works everywhere -- the main checkout uses the plain name, each worktree gets a unique subdomain. No collisions, no `--force`.
 
 ## Custom TLD
@@ -128,7 +134,7 @@ On Linux, `portless trust` supports Debian/Ubuntu, Arch, Fedora/RHEL/CentOS, and
 ## Commands
 
 ```bash
-portless run <cmd> [args...]     # Infer name from project, run through proxy
+portless run [--name <name>] <cmd> [args...]  # Infer name (or override with --name), run through proxy
 portless <name> <cmd> [args...]  # Run app at http://<name>.localhost:1355
 portless alias <name> <port>     # Register a static route (e.g. for Docker)
 portless alias <name> <port> --force  # Overwrite an existing route

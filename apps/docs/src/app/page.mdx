@@ -67,6 +67,12 @@ portless run next dev   # -> http://fix-ui.myapp.localhost:1355
 
 Put `portless run` in your `package.json` once and it works everywhere -- the main checkout uses the plain name, each worktree gets a unique subdomain. No collisions, no `--force`.
 
+Use `--name` to override the inferred base name while keeping the worktree prefix:
+
+```bash
+portless run --name myapp next dev   # -> http://fix-ui.myapp.localhost:1355
+```
+
 ## Custom TLD
 
 By default, portless uses `.localhost` which auto-resolves to `127.0.0.1` in most browsers. If you prefer a different TLD (e.g. `.test`), use `--tld`:
