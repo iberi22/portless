@@ -3,7 +3,7 @@
 Replace port numbers with stable, named .localhost URLs. For humans and agents.
 
 ```diff
-- "dev": "next dev"              # http://localhost:3000
+- "dev": "next dev"                # http://localhost:3000
 + "dev": "portless run next dev"   # http://myapp.localhost:1355
 ```
 
@@ -122,14 +122,15 @@ Enable HTTP/2 for faster dev server page loads. Browsers limit HTTP/1.1 to 6 con
 
 ```bash
 # Start with HTTPS/2 -- generates certs and trusts them automatically
-portless proxy start --https
+# Defaults to port 443 (requires sudo)
+sudo portless proxy start --https
 
 # First run prompts for sudo once to add the CA to your system trust store.
 # After that, no prompts. No browser warnings.
 
 # Make it permanent (add to .bashrc / .zshrc)
 export PORTLESS_HTTPS=1
-portless proxy start    # HTTPS by default now
+sudo portless proxy start    # HTTPS on port 443 by default
 
 # Use your own certs (e.g., from mkcert)
 portless proxy start --cert ./cert.pem --key ./key.pem
@@ -165,9 +166,9 @@ portless proxy start --foreground  # Start in foreground (for debugging)
 portless proxy stop              # Stop the proxy
 
 # Options
--p, --port <number>              # Port for the proxy (default: 1355)
+-p, --port <number>              # Port for the proxy (default: 1355, or 443 with --https)
                                  # Ports < 1024 require sudo
---https                          # Enable HTTP/2 + TLS with auto-generated certs
+--https                          # Enable HTTP/2 + TLS with auto-generated certs (default port: 443)
 --cert <path>                    # Use a custom TLS certificate (implies --https)
 --key <path>                     # Use a custom TLS private key (implies --https)
 --no-tls                         # Disable HTTPS (overrides PORTLESS_HTTPS)

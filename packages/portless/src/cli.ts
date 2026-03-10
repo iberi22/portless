@@ -695,9 +695,9 @@ ${chalk.bold("HTTP/2 + HTTPS:")}
 ${chalk.bold("Options:")}
   run <cmd>                      Infer project name from package.json / git / cwd
                                 Adds worktree prefix in git worktrees
-  -p, --port <number>           Port for the proxy to listen on (default: 1355)
+  -p, --port <number>           Port for the proxy to listen on (default: 1355, or 443 with --https)
                                 Ports < 1024 require sudo
-  --https                       Enable HTTP/2 + TLS with auto-generated certs
+  --https                       Enable HTTP/2 + TLS with auto-generated certs (default port: 443)
   --cert <path>                 Use a custom TLS certificate (implies --https)
   --key <path>                  Use a custom TLS private key (implies --https)
   --no-tls                      Disable HTTPS (overrides PORTLESS_HTTPS)
@@ -1022,6 +1022,10 @@ ${chalk.bold("Usage:")}
   const hasNoTls = args.includes("--no-tls");
   const hasHttpsFlag = args.includes("--https");
   const wantHttps = !hasNoTls && (hasHttpsFlag || isHttpsEnvEnabled());
+
+  if (wantHttps && portFlagIndex === -1 && !process.env.PORTLESS_PORT) {
+    proxyPort = 443;
+  }
 
   // Parse optional --cert / --key for custom certificates
   let customCertPath: string | null = null;
