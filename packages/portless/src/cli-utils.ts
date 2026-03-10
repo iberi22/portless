@@ -127,13 +127,19 @@ export function writeTlsMarker(dir: string, enabled: boolean): void {
 /** Default TLD when PORTLESS_TLD is not set. */
 export const DEFAULT_TLD = "localhost";
 
-/** Public TLDs that must never be used (traffic would leak to the real domain). */
-const BLOCKED_TLDS = new Set(["com", "org", "net", "io", "app", "edu", "gov", "mil", "int"]);
-
 /** TLDs that work but have known pitfalls worth warning about. */
 export const RISKY_TLDS = new Map<string, string>([
   ["local", "conflicts with mDNS/Bonjour on macOS"],
   ["dev", "Google-owned; browsers force HTTPS via preloaded HSTS"],
+  ["com", "public TLD -- DNS requests will leak to the internet"],
+  ["org", "public TLD -- DNS requests will leak to the internet"],
+  ["net", "public TLD -- DNS requests will leak to the internet"],
+  ["io", "public TLD -- DNS requests will leak to the internet"],
+  ["app", "public TLD -- DNS requests will leak to the internet"],
+  ["edu", "public TLD -- DNS requests will leak to the internet"],
+  ["gov", "public TLD -- DNS requests will leak to the internet"],
+  ["mil", "public TLD -- DNS requests will leak to the internet"],
+  ["int", "public TLD -- DNS requests will leak to the internet"],
 ]);
 
 /**
@@ -144,9 +150,6 @@ export function validateTld(tld: string): string | null {
   if (!tld) return "TLD cannot be empty";
   if (!/^[a-z0-9]+$/.test(tld)) {
     return `Invalid TLD "${tld}": must contain only lowercase letters and digits`;
-  }
-  if (BLOCKED_TLDS.has(tld)) {
-    return `TLD ".${tld}" is a public TLD and cannot be used (traffic would leak to the real domain)`;
   }
   return null;
 }

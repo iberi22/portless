@@ -89,7 +89,7 @@ No config changes needed. Put `portless run` in `package.json` once and it works
 
 ### Bypassing portless
 
-Set `PORTLESS=0` or `PORTLESS=skip` to run the command directly without the proxy:
+Set `PORTLESS=0` to run the command directly without the proxy:
 
 ```bash
 PORTLESS=0 pnpm dev   # Bypasses proxy, uses default port
@@ -120,11 +120,11 @@ Override with the `PORTLESS_STATE_DIR` environment variable.
 | --------------------- | ----------------------------------------------------------------- |
 | `PORTLESS_PORT`       | Override the default proxy port (default: 1355)                   |
 | `PORTLESS_APP_PORT`   | Use a fixed port for the app (skip auto-assignment)               |
-| `PORTLESS_HTTPS`      | Set to `1` or `true` to always enable HTTPS/HTTP/2                |
+| `PORTLESS_HTTPS`      | Set to `1` to always enable HTTPS/HTTP/2                          |
 | `PORTLESS_TLD`        | Use a custom TLD instead of localhost (e.g. test)                 |
 | `PORTLESS_SYNC_HOSTS` | Set to `1` to auto-sync /etc/hosts (auto-enabled for custom TLDs) |
 | `PORTLESS_STATE_DIR`  | Override the state directory                                      |
-| `PORTLESS=0\|skip`    | Bypass the proxy, run the command directly                        |
+| `PORTLESS=0`          | Bypass the proxy, run the command directly                        |
 
 ### HTTP/2 + HTTPS
 

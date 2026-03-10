@@ -8,6 +8,7 @@ import {
   DEFAULT_PROXY_PORT,
   DEFAULT_TLD,
   PRIVILEGED_PORT_THRESHOLD,
+  RISKY_TLDS,
   SYSTEM_STATE_DIR,
   USER_STATE_DIR,
   findFreePort,
@@ -389,16 +390,17 @@ describe("validateTld", () => {
     expect(validateTld("tld!")).toMatch(/must contain only/);
   });
 
-  it("rejects public TLDs", () => {
-    expect(validateTld("com")).toMatch(/public TLD/);
-    expect(validateTld("org")).toMatch(/public TLD/);
-    expect(validateTld("net")).toMatch(/public TLD/);
-    expect(validateTld("io")).toMatch(/public TLD/);
-    expect(validateTld("app")).toMatch(/public TLD/);
+  it("allows public TLDs (they produce warnings elsewhere)", () => {
+    for (const tld of ["com", "org", "net", "io", "app"]) {
+      expect(validateTld(tld)).toBeNull();
+      expect(RISKY_TLDS.has(tld)).toBe(true);
+    }
   });
 
   it("allows risky TLDs (they produce warnings elsewhere)", () => {
-    expect(validateTld("local")).toBeNull();
-    expect(validateTld("dev")).toBeNull();
+    for (const tld of ["local", "dev"]) {
+      expect(validateTld(tld)).toBeNull();
+      expect(RISKY_TLDS.has(tld)).toBe(true);
+    }
   });
 });

@@ -175,11 +175,7 @@ function startProxyServer(
       // Port file may already be removed; non-fatal
     }
     writeTlsMarker(store.dir, false);
-    try {
-      fs.unlinkSync(path.join(store.dir, "proxy.tld"));
-    } catch {
-      // TLD file may already be removed; non-fatal
-    }
+    writeTldFile(store.dir, DEFAULT_TLD);
     if (autoSyncHosts) cleanHostsFile();
     server.close(() => process.exit(0));
     // Force exit after a short timeout in case connections don't drain
@@ -720,11 +716,11 @@ ${chalk.bold("Options:")}
 ${chalk.bold("Environment variables:")}
   PORTLESS_PORT=<number>        Override the default proxy port (e.g. in .bashrc)
   PORTLESS_APP_PORT=<number>    Use a fixed port for the app (same as --app-port)
-  PORTLESS_HTTPS=1|true         Always enable HTTPS (set in .bashrc / .zshrc)
+  PORTLESS_HTTPS=1              Always enable HTTPS (set in .bashrc / .zshrc)
   PORTLESS_TLD=<tld>            Use a custom TLD (e.g. test, dev; default: localhost)
   PORTLESS_SYNC_HOSTS=1         Auto-sync /etc/hosts (auto-enabled for custom TLDs)
   PORTLESS_STATE_DIR=<path>     Override the state directory
-  PORTLESS=0 | PORTLESS=skip    Run command directly without proxy
+  PORTLESS=0                    Run command directly without proxy
 
 ${chalk.bold("Child process environment:")}
   PORT                          Ephemeral port the child should listen on
@@ -742,7 +738,6 @@ ${chalk.bold("Safari / DNS:")}
 
 ${chalk.bold("Skip portless:")}
   PORTLESS=0 pnpm dev           # Runs command directly without proxy
-  PORTLESS=skip pnpm dev        # Same as above
 
 ${chalk.bold("Reserved names:")}
   run, get, alias, hosts, list, trust, proxy are subcommands and cannot
@@ -1351,7 +1346,10 @@ async function main() {
       console.error(chalk.cyan("  portless --name <name> <command...>"));
       process.exit(1);
     }
-    const skipPortless = process.env.PORTLESS === "0" || process.env.PORTLESS === "skip";
+    const skipPortless =
+      process.env.PORTLESS === "0" ||
+      process.env.PORTLESS === "false" ||
+      process.env.PORTLESS === "skip";
     if (skipPortless) {
       const { commandArgs } = parseAppArgs(args);
       if (commandArgs.length === 0) {
@@ -1371,8 +1369,10 @@ async function main() {
     args.shift();
   }
 
-  // Skip portless if PORTLESS=0 or PORTLESS=skip
-  const skipPortless = process.env.PORTLESS === "0" || process.env.PORTLESS === "skip";
+  const skipPortless =
+    process.env.PORTLESS === "0" ||
+    process.env.PORTLESS === "false" ||
+    process.env.PORTLESS === "skip";
   if (skipPortless && (isRunCommand || (args.length >= 2 && args[0] !== "proxy"))) {
     const { commandArgs } = isRunCommand ? parseRunArgs(args) : parseAppArgs(args);
     if (commandArgs.length === 0) {

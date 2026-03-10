@@ -170,7 +170,7 @@ portless proxy stop              # Stop the proxy
 # Configuration
 PORTLESS_PORT=<number>           Override the default proxy port
 PORTLESS_APP_PORT=<number>       Use a fixed port for the app (same as --app-port)
-PORTLESS_HTTPS=1|true            Always enable HTTPS
+PORTLESS_HTTPS=1                 Always enable HTTPS
 PORTLESS_TLD=<tld>               Use a custom TLD (e.g. test; default: localhost)
 PORTLESS_SYNC_HOSTS=1            Auto-sync /etc/hosts (auto-enabled for custom TLDs)
 PORTLESS_STATE_DIR=<path>        Override the state directory
