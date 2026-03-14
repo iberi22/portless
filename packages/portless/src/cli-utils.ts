@@ -5,7 +5,7 @@ import * as net from "node:net";
 import * as os from "node:os";
 import * as path from "node:path";
 import * as readline from "node:readline";
-import { execSync, spawn } from "node:child_process";
+import { execFileSync, execSync, spawn } from "node:child_process";
 import { PORTLESS_HEADER } from "./proxy.js";
 
 // ---------------------------------------------------------------------------
@@ -15,11 +15,13 @@ import { PORTLESS_HEADER } from "./proxy.js";
 /** Default proxy port. Uses an unprivileged port so sudo is not required. */
 export const DEFAULT_PROXY_PORT = 1355;
 
+export const IS_WINDOWS = process.platform === "win32";
+
 /** Ports below this threshold require root/sudo to bind. */
 export const PRIVILEGED_PORT_THRESHOLD = 1024;
 
 /** System-wide state directory (used when proxy needs sudo). */
-export const SYSTEM_STATE_DIR = "/tmp/portless";
+export const SYSTEM_STATE_DIR = path.join(os.tmpdir(), "portless");
 
 /** Per-user state directory (used when proxy runs without sudo). */
 export const USER_STATE_DIR = path.join(os.homedir(), ".portless");
@@ -72,6 +74,14 @@ export function getDefaultPort(): number {
   return DEFAULT_PROXY_PORT;
 }
 
+export function portRequiresElevation(port: number): boolean {
+  return !IS_WINDOWS && port < PRIVILEGED_PORT_THRESHOLD;
+}
+
+export function getPortInspectionCommand(port: number): string {
+  return IS_WINDOWS ? `netstat -ano -p tcp | findstr :${port}` : `lsof -ti tcp:${port}`;
+}
+
 // ---------------------------------------------------------------------------
 // State directory resolution
 // ---------------------------------------------------------------------------
@@ -84,7 +94,7 @@ export function getDefaultPort(): number {
  */
 export function resolveStateDir(port: number): string {
   if (process.env.PORTLESS_STATE_DIR) return process.env.PORTLESS_STATE_DIR;
-  return port < PRIVILEGED_PORT_THRESHOLD ? SYSTEM_STATE_DIR : USER_STATE_DIR;
+  return portRequiresElevation(port) ? SYSTEM_STATE_DIR : USER_STATE_DIR;
 }
 
 /** Read the proxy port from a given state directory. Returns null if unreadable. */
@@ -353,6 +363,27 @@ export function isProxyRunning(port: number, tls = false): Promise<boolean> {
  * Returns null if the PID cannot be determined.
  */
 export function findPidOnPort(port: number): number | null {
+  if (IS_WINDOWS) {
+    try {
+      const output = execFileSync("netstat", ["-ano", "-p", "tcp"], {
+        encoding: "utf-8",
+        timeout: LSOF_TIMEOUT_MS,
+      });
+      for (const line of output.split(/\r?\n/)) {
+        const parts = line.trim().split(/\s+/);
+        if (parts.length < 5 || parts[0].toUpperCase() !== "TCP") continue;
+        const localAddress = parts[1];
+        const state = parts[3];
+        const pid = parseInt(parts[4], 10);
+        if (!localAddress.endsWith(`:${port}`) || state.toUpperCase() !== "LISTENING") continue;
+        return isNaN(pid) ? null : pid;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
+
   try {
     const output = execSync(`lsof -ti tcp:${port} -sTCP:LISTEN`, {
       encoding: "utf-8",
@@ -433,11 +464,16 @@ export function spawnCommand(
   }
 ): void {
   const env = { ...(options?.env ?? process.env), PATH: augmentedPath(options?.env) };
-  const shellCmd = commandArgs.map(shellEscape).join(" ");
-  const child = spawn("/bin/sh", ["-c", shellCmd], {
-    stdio: "inherit",
-    env,
-  });
+  const child = IS_WINDOWS
+    ? spawn(commandArgs[0], commandArgs.slice(1), {
+        stdio: "inherit",
+        env,
+        shell: true,
+      })
+    : spawn("/bin/sh", ["-c", commandArgs.map(shellEscape).join(" ")], {
+        stdio: "inherit",
+        env,
+      });
 
   let exiting = false;
 

@@ -43,6 +43,18 @@ function fileExists(filePath: string): boolean {
   }
 }
 
+function commandExists(command: string): boolean {
+  try {
+    execFileSync(process.platform === "win32" ? "where" : "which", [command], {
+      stdio: "pipe",
+      timeout: 5000,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Check whether a PEM certificate file has expired or will expire soon.
  * Returns true if the cert is still valid, false if it needs regeneration.
@@ -93,7 +105,7 @@ function openssl(args: string[], options?: { input?: string }): string {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     throw new Error(
-      `openssl failed: ${message}\n\nMake sure openssl is installed (ships with macOS and most Linux distributions).`
+      `openssl failed: ${message}\n\nMake sure openssl is installed and available in PATH.`
     );
   }
 }
@@ -115,7 +127,7 @@ async function opensslAsync(args: string[]): Promise<string> {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     throw new Error(
-      `openssl failed: ${message}\n\nMake sure openssl is installed (ships with macOS and most Linux distributions).`
+      `openssl failed: ${message}\n\nMake sure openssl is installed and available in PATH.`
     );
   }
 }
@@ -291,12 +303,16 @@ export function isCATrusted(stateDir: string): boolean {
   const caCertPath = path.join(stateDir, CA_CERT_FILE);
   if (!fileExists(caCertPath)) return false;
 
-  if (process.platform === "darwin") {
-    return isCATrustedMacOS(caCertPath);
-  } else if (process.platform === "linux") {
-    return isCATrustedLinux(stateDir);
+  switch (process.platform) {
+    case "darwin":
+      return isCATrustedMacOS(caCertPath);
+    case "linux":
+      return isCATrustedLinux(stateDir);
+    case "win32":
+      return isCATrustedWindows(caCertPath);
+    default:
+      return false;
   }
-  return false;
 }
 
 function isCATrustedMacOS(caCertPath: string): boolean {
@@ -323,6 +339,22 @@ function isCATrustedMacOS(caCertPath: string): boolean {
       });
     }
     return true;
+  } catch {
+    return false;
+  }
+}
+
+function isCATrustedWindows(caCertPath: string): boolean {
+  if (!commandExists("certutil")) return false;
+
+  try {
+    const fingerprint = new crypto.X509Certificate(fs.readFileSync(caCertPath)).fingerprint;
+    const normalized = fingerprint.replace(/:/g, "").toUpperCase();
+    const output = execFileSync("certutil", ["-user", "-store", "Root"], {
+      encoding: "utf-8",
+      timeout: 5000,
+    });
+    return output.toUpperCase().replace(/\s+/g, "").includes(normalized);
   } catch {
     return false;
   }
@@ -395,7 +427,7 @@ function detectLinuxDistro(): string | undefined {
   // Fallback: probe for known update commands
   for (const [distro, config] of Object.entries(LINUX_CA_TRUST_CONFIGS)) {
     try {
-      execFileSync("which", [config.updateCommand], { stdio: "pipe", timeout: 5000 });
+      if (!commandExists(config.updateCommand)) continue;
       if (fs.existsSync(path.dirname(config.certDir))) return distro;
     } catch {
       // Not found, try next
@@ -680,6 +712,18 @@ export function trustCA(stateDir: string): { trusted: boolean; error?: string } 
           { stdio: "pipe", timeout: 30_000 }
         );
       }
+      return { trusted: true };
+    } else if (process.platform === "win32") {
+      if (!commandExists("certutil")) {
+        return {
+          trusted: false,
+          error: "certutil is not available. Install the CA manually from the generated PEM file.",
+        };
+      }
+      execFileSync("certutil", ["-user", "-addstore", "Root", caCertPath], {
+        stdio: "pipe",
+        timeout: 30_000,
+      });
       return { trusted: true };
     } else if (process.platform === "linux") {
       const config = getLinuxCATrustConfig();

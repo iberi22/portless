@@ -9,7 +9,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { createSNICallback, ensureCerts, isCATrusted, trustCA } from "./certs.js";
 import { createProxyServer } from "./proxy.js";
 import { fixOwnership, formatUrl, isErrnoException, parseHostname } from "./utils.js";
-import { syncHostsFile, cleanHostsFile } from "./hosts.js";
+import { HOSTS_PATH, syncHostsFile, cleanHostsFile } from "./hosts.js";
 import { FILE_MODE, RouteConflictError, RouteStore } from "./routes.js";
 import { inferProjectName, detectWorktreePrefix } from "./auto.js";
 import {
@@ -24,6 +24,8 @@ import {
   injectFrameworkFlags,
   isHttpsEnvEnabled,
   isProxyRunning,
+  getPortInspectionCommand,
+  portRequiresElevation,
   prompt,
   readTldFromDir,
   readTlsMarker,
@@ -50,6 +52,14 @@ const EXIT_TIMEOUT_MS = 2000;
 
 /** Timeout (ms) for the sudo spawn when auto-starting the proxy. */
 const SUDO_SPAWN_TIMEOUT_MS = 30_000;
+
+function getElevationHint(command: string): string {
+  return process.platform === "win32" ? command : `sudo ${command}`;
+}
+
+function getElevationLabel(): string {
+  return process.platform === "win32" ? "an Administrator terminal" : "sudo";
+}
 
 // ---------------------------------------------------------------------------
 // Proxy server lifecycle
@@ -129,7 +139,7 @@ function startProxyServer(
       console.error(chalk.blue("Stop the existing proxy first:"));
       console.error(chalk.cyan("  portless proxy stop"));
       console.error(chalk.blue("Or check what is using the port:"));
-      console.error(chalk.cyan(`  lsof -ti tcp:${proxyPort}`));
+      console.error(chalk.cyan(`  ${getPortInspectionCommand(proxyPort)}`));
     } else if (err.code === "EACCES") {
       console.error(chalk.red(`Permission denied for port ${proxyPort}.`));
       console.error(chalk.blue("Either run with sudo:"));
@@ -223,18 +233,18 @@ async function stopProxy(store: RouteStore, proxyPort: number, _tls: boolean): P
             const message = err instanceof Error ? err.message : String(err);
             console.error(chalk.red(`Failed to stop proxy: ${message}`));
             console.error(chalk.blue("Check if the process is still running:"));
-            console.error(chalk.cyan(`  lsof -ti tcp:${proxyPort}`));
+            console.error(chalk.cyan(`  ${getPortInspectionCommand(proxyPort)}`));
           }
         }
       } else if (process.getuid?.() !== 0) {
-        // Not running as root -- lsof likely cannot see root-owned processes
+        // Not running as root -- port inspection may not see root-owned processes
         console.error(chalk.red("Cannot identify the process. It may be running as root."));
         console.error(chalk.blue("Try stopping with sudo:"));
         console.error(chalk.cyan("  sudo portless proxy stop"));
       } else {
         console.error(chalk.red(`Could not identify the process on port ${proxyPort}.`));
         console.error(chalk.blue("Try manually:"));
-        console.error(chalk.cyan(`  sudo kill "$(lsof -ti tcp:${proxyPort})"`));
+        console.error(chalk.cyan(`  sudo kill "$(${getPortInspectionCommand(proxyPort)})"`));
       }
     } else {
       console.log(chalk.yellow("Proxy is not running."));
@@ -295,7 +305,7 @@ async function stopProxy(store: RouteStore, proxyPort: number, _tls: boolean): P
       const message = err instanceof Error ? err.message : String(err);
       console.error(chalk.red(`Failed to stop proxy: ${message}`));
       console.error(chalk.blue("Check if the process is still running:"));
-      console.error(chalk.cyan(`  lsof -ti tcp:${proxyPort}`));
+      console.error(chalk.cyan(`  ${getPortInspectionCommand(proxyPort)}`));
     }
   }
 }

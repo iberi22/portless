@@ -5,6 +5,7 @@ import * as fs from "node:fs";
  * read/write the file later without sudo. No-op when not running as root.
  */
 export function fixOwnership(...paths: string[]): void {
+  if (process.platform === "win32") return;
   const uid = process.env.SUDO_UID;
   const gid = process.env.SUDO_GID;
   if (!uid || process.getuid?.() !== 0) return;
